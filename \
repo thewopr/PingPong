@@ -1,0 +1,114 @@
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <time.h>
+#include <arpa/inet.h>
+#include <inttypes.h>
+#include <netdb.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <unistd.h>
+#include <sys/select.h>
+#include "lab03.h"
+
+long int printRTT( struct timeval start, struct timeval end) {
+
+	long int deltams;
+	deltams = end.tv_usec - start.tv_usec;
+	
+	printf("RTT: %ld\n", deltams);
+	return deltams;
+}
+
+int main(int argc, char **argv)
+{
+	if (2 != argc) {
+		printf("Usage: %s gateway-host\n", argv[0]);
+		exit(-1);
+	}
+
+	long totaltime, count;
+
+	totaltime = 0;
+	count = 0;
+
+
+	int socket_fd, fsize;
+	struct sockaddr_in from, gateway, dest;
+	struct hostent *hostptr;
+	message msgbuf, msgin;
+	int counter = 0;
+
+	socket_fd = Socket (AF_INET, SOCK_DGRAM, 0);
+
+	bzero((char *) &dest, sizeof(dest));
+	bzero((char *) &gateway, sizeof(gateway));
+
+	hostptr = gethostbyname(argv[1]);
+
+	gateway.sin_family = (short) AF_INET;
+	gateway.sin_addr.s_addr = htonl(INADDR_ANY);
+	gateway.sin_port = htons((u_short)GATEWAY_TO_SOURCE);
+
+	msgbuf.head = '<';
+	msgbuf.tail = '>';
+	msgbuf.seq = 0;
+
+	Bind(socket_fd, (struct sockaddr *) &gateway, sizeof(gateway));
+
+	fd_set watch;
+	struct timeval start,end;
+
+	while(1) {
+
+		FD_ZERO(&watch);
+		FD_SET(socket_fd,&watch);
+
+		msgbuf.body = htonl(counter);
+		dest.sin_family = (short) AF_INET;
+		bcopy(hostptr->h_addr, (char *)&dest.sin_addr,hostptr->h_length);
+		dest.sin_port = htons((u_short)SOURCE_TO_GATEWAY);
+
+		//START TIMER	
+		gettimeofday(&start,NULL);
+
+		Sendto(socket_fd,&msgbuf,sizeof(msgbuf),0,(struct sockaddr *)&dest,
+				sizeof(dest));
+
+		printf("Sent a packet to gateway\n");
+
+		struct timeval tV;	
+		tV.tv_sec = 0;
+		tV.tv_usec = 500000;
+
+		Select(socket_fd+1, &watch, NULL,NULL, &tV);
+
+		if(FD_ISSET(socket_fd, &watch)){
+			fsize = sizeof(struct sockaddr);
+			Recvfrom(socket_fd, &msgin,sizeof(msgin),0,(struct sockaddr *)&from,(socklen_t*) &fsize);
+
+			//END TIMER
+			gettimeofday(&end,NULL);
+			totaltime += printRTT(start, end);
+			count++;
+			printf("Average RTT = %f", ((double)totaltime / (double)count));
+
+			printsin((struct sockaddr_in*)&from, "SOURCE: ", "Packet from:");		
+			printf("Got data ::%c%ld%c (%d)\n", msgin.head, (long) ntohl(msgin.body),msgin.tail, msgin.seq); 
+			fflush(stdout);
+
+			if(msgbuf.seq == msgin.seq) {
+				counter++;
+				msgbuf.seq = 1 - msgbuf.seq;
+			}
+			else {
+				printf("Ack's are out of order, resending original msg");
+			}
+			}
+			else {
+				printf("Timed out and resending my msg\n");
+			}
+		}
+		return 0;
+	}
