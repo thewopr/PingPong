@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 			printf("REFLECTOR: Listening for a connection\n");
 			alen = sizeof(cad);
 
-			sd2 = accept(sd, (struct sockaddr *) &cad, alen);		
+			sd2 = accept(sd, (struct sockaddr *) &cad, &alen);		
 
 			printf("REFLECTOR: Accepted a connection\n");
 			printsin(&cad, "REFLECTOR", ": ");
