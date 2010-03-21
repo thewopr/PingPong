@@ -15,7 +15,6 @@
 extern int errno;
 
 #define BUFSIZE 1000
-#define NUMPACKETS 30
 #define MAXDATAGRAMSIZE 65000
 
 int main(int argc, char* argv[]) {
@@ -53,11 +52,17 @@ int main(int argc, char* argv[]) {
 		
 		while(1) {
 			printf("Reflector awaiting UDP datagrams\n");	
-			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0, &cad, (socklen_t *) &fsize);
+			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0,(struct sockaddr *)  &cad, (socklen_t *) &fsize);
 			printf("RELFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
 			int *dump = malloc(bytes_expected);
-			Recvfrom(sd, dump, sizeof(dump),0,&cad, (socklen_t *) &fsize);
+			Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *)&cad, (socklen_t *) &fsize);
 			printf("REFLECTOR: UDP received a %d size packet\n", bytes_expected);
+			
+			printsin(&cad, "REFLECTOR", ": UDP");				
+
+
+
+
 		}
 
 	} else if(strncmp(argv[2],"TCP", 3) == 0) {
@@ -71,7 +76,7 @@ int main(int argc, char* argv[]) {
 		sad.sin_addr.s_addr = htonl(INADDR_ANY);
 		sad.sin_port = htons((u_short)port);
 
-		int alen;
+		u_int alen;
 		int bytes_expected;
 		int	sd, sd2;		     // socket descriptor			
 		sd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -82,7 +87,7 @@ int main(int argc, char* argv[]) {
 
 		listen(sd, 1);
 		
-		for(i = 0; i < NUMPACKETS; i++) {
+		while(1) {
 
 			memset((char *)&cad,0,sizeof(cad)); // clear sockaddr structure	
 
@@ -94,13 +99,21 @@ int main(int argc, char* argv[]) {
 			printf("REFLECTOR: Accepted a connection\n");
 			printsin(&cad, "REFLECTOR", ": ");
 			
-			printf("REFLECTOR: (%d) Waiting to receive a message\n", i);
+			printf("REFLECTOR: Waiting to receive a message\n");
 
 			Readn(sd2, &bytes_expected, sizeof(int));
-			Readn(sd2, buf, bytes_expected+1);
+			Readn(sd2, buf, bytes_expected);
 
-			printf("REFLECTOR: (%d) Received a message\n", i);
-			printf("REFLECTOR: (%d) (%d) '%s'\n", i, bytes_expected, buf);
+			printf("REFLECTOR: Received a message\n");
+			printf("REFLECTOR: (%d) '%s'\n", bytes_expected, buf);
+
+			printf("REFLECTOR: Replying with the same message\n");
+
+			Writen(sd2, &bytes_expected, sizeof(int));
+			Writen(sd2, buf, bytes_expected);
+
+			printf("REFLECTOR: Reply message sent\n");
+
 		}
 
 		close(sd2);

@@ -6,7 +6,7 @@ CC = gcc
 HDRS = lab05.h wrappers.h
 OBJS = lab05.o wrappers.o
 CFLAGS = -Wall -g
-EXECS =	source sink gateway reflector
+EXECS =	source sink gateway reflector pingpong
 
 LFLAGS = 
 
@@ -26,6 +26,10 @@ sink: sink.c lab05.o wrappers.o
 
 reflector: reflector.c lab05.o wrappers.o
 	$(CC) $(CFLAGS) $< $(OBJS) -o $@ $(LFLAGS)
+
+pingpong: pingpong.c lab05.o wrappers.o
+	$(CC) $(CFLAGS) $< $(OBJS) -o $@ $(LFLAGS)
+
 
 clean:
 	/bin/rm -f $(OBJS) $(EXECS) core* *~ semantic.cache

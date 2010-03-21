@@ -20,173 +20,30 @@ extern int errno;
 
 int main(int argc, char* argv[]) {
 
-	if (argc < 3) {
-		printf("usage: %s [ port ] [ protocol ]\n",argv[0]);
+	if (argc < 5) {
+		printf("usage: %s [ msgbytes ] [ host ] [ port ] [ protocol ]\n",argv[0]);
 		exit(-1);
 	}
 
 	int i = 0;
-	int	port = atoi(argv[1]);		     // protocol port number		
+	int msgbytes = atoi(argv[1]);
+	char *host = argv[2];
+	int port = atoi(argv[3]);		     // protocol port number		
+	char *prot = argv[4];
 
 	if (port <= 0) {	
-		fprintf(stderr,"SOURCE: bad port number %s\n",argv[2]);
+		fprintf(stderr,"PINGPONG: bad port number %s\n",argv[3]);
 		exit(1);
 	}
 
-	if(strncmp(argv[2],"UDP", 3) == 0 ) {
-		struct sockaddr_in cad; // structure to hold an IP address	
-		struct sockaddr_in sad; // structure to hold an IP address	
-		memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
-		sad.sin_family = AF_INET;	      // set family to Internet	
-		sad.sin_addr.s_addr = htonl(INADDR_ANY);
-		sad.sin_port = htons((u_short)port);
-
-		int fsize = sizeof(struct sockaddr);
-		int bytes_expected;
-		int	sd;		     // socket descriptor			
-		sd = Socket(AF_INET, SOCK_DGRAM, 0);
-
-		Bind(sd, (struct sockaddr *) &sad, sizeof(sad));
-		
-
-		printf("REFLECTOR: UDP Socket created\n");
-		
-		while(1) {
-			printf("Reflector awaiting UDP datagrams\n");	
-			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0, &cad, (socklen_t *) &fsize);
-			printf("RELFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
-			int *dump = malloc(bytes_expected);
-			Recvfrom(sd, dump, sizeof(dump),0,&cad, (socklen_t *) &fsize);
-			printf("REFLECTOR: UDP received a %d size packet\n", bytes_expected);
-		}
-
-	} else if(strncmp(argv[2],"TCP", 3) == 0) {
-
-		char	buf[BUFSIZE];	     // buffer for data from the server
-
-		struct sockaddr_in cad; // structure to hold an IP address	
-		struct sockaddr_in sad; // structure to hold an IP address	
-		memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
-		sad.sin_family = AF_INET;	      // set family to Internet	
-		sad.sin_addr.s_addr = htonl(INADDR_ANY);
-		sad.sin_port = htons((u_short)port);
-
-		int alen;
-		int bytes_expected;
-		int	sd, sd2;		     // socket descriptor			
-		sd = Socket(AF_INET, SOCK_STREAM, 0);
-
-		Bind(sd, (struct sockaddr *) &sad, sizeof(sad));
-
-		printf("REFLECTOR: TCP Socket created\n");
-
-		listen(sd, 1);
-		
-		for(i = 0; i < NUMPACKETS; i++) {
-
-			memset((char *)&cad,0,sizeof(cad)); // clear sockaddr structure	
-
-			printf("REFLECTOR: Listening for a connection\n");
-			alen = sizeof(cad);
-
-			sd2 = accept(sd, (struct sockaddr *) &cad, &alen);		
-
-			printf("REFLECTOR: Accepted a connection\n");
-			printsin(&cad, "REFLECTOR", ": ");
-			
-			printf("REFLECTOR: (%d) Waiting to receive a message\n", i);
-
-			Readn(sd2, &bytes_expected, sizeof(int));
-			Readn(sd2, buf, bytes_expected+1);
-
-			printf("REFLECTOR: (%d) Received a message\n", i);
-			printf("REFLECTOR: (%d) (%d) '%s'\n", i, bytes_expected, buf);
-		}
-
-		close(sd2);
-		close(sd);		
-
-	} else {
-		printf("Improper protocol %s expecting either 'TCP' or 'UDP'\n", argv[2]);
+	if(msgbytes < 1 || msgbytes > 65000) {
+		fprintf(stderr,"PINGPONG: bad msgbytes size (%d), 0 < msgbytes < 65001 \n", msgbytes);
+		exit(1);
 	}
-
-	return 1;
-}
-/*
- * CSCI 363 Computer Networks
- */
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "wrappers.h"
-
-extern int errno;
-
-/*------------------------------------------------------------------------
- * Program:   getfile 
- *
- * Purpose:   allocate a socket, connect to a server, transfer requested
- *            file to local host, and print file contents to stdout
- *
- * Syntax:    getfile [ host ] [ port ]
- *
- *		 host  - name of a computer on which server is executing
- *		 port  - protocol port number server is using
- *               file  - complete path of file to retrieve
- *
- *------------------------------------------------------------------------
- */
-
-
-#define BUFSIZE 1000
-#define NAMELEN 257
-
-int main(int argc, char* argv[]) {
-
-	struct	sockaddr_in sad; // structure to hold an IP address	
-
-	struct addrinfo hint;
+	
 	struct addrinfo *serverptr;
-
-	int	sd;		     // socket descriptor			
-	int	port;		     // protocol port number		
-	char	*host;		     // pointer to host name		
-	char	buf[BUFSIZE];	     // buffer for data from the server
-	char buf2[BUFSIZE];
-	int   bytes_read;          // number of bytes read from socket
-	int   bytes_expected;
-
-	memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
-	sad.sin_family = AF_INET;	      // set family to Internet	
-
-	// Check command-line arguments
-	int i; 
-	for(i = 0; i < BUFSIZE; i++) {
-		buf2[i] = 'A';
-	}
-	buf2[i-1] = 0;
-
-	if (argc < 3) {
-		printf("usage: getfile [ host ] [ port ]\n");
-		exit(-1);
-	}
-
-	host = argv[1];		
-	port = atoi(argv[2]);	
-
-	if (port <= 0) {	
-		// test for legal value		
-		// print error message and exit	
-		fprintf(stderr,"SOURCE: bad port number %s\n",argv[2]);
-		exit(1);
-	}
-
+	struct addrinfo hint;
+	
 	//  prepare the hint information
 	bzero(&hint, sizeof(hint));
 	hint.ai_flags = AI_CANONNAME;
@@ -194,46 +51,79 @@ int main(int argc, char* argv[]) {
 
 	Getaddrinfo(host, NULL, &hint, &serverptr);
 
-	bcopy(serverptr->ai_addr, (char *)&sad, serverptr->ai_addrlen);
+	if(strncmp(prot,"UDP", 3) == 0 ) {
+		struct sockaddr_in cad; // structure to hold an IP address	
+		struct sockaddr_in sad; // structure to hold an IP address	
+		memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
+		sad.sin_family = AF_INET;	      // set family to Internet	
+		bcopy(serverptr->ai_addr, (char *) &sad,  serverptr->ai_addrlen);
+		sad.sin_port = htons((u_short)port);
 
-	sad.sin_port = htons((u_short)port);
+		int fsize = sizeof(struct sockaddr);
+		int bytes_expected, sd;
+		sd = Socket(AF_INET, SOCK_DGRAM, 0);
 
-	// Create a socket. 
-	sd = Socket(AF_INET, SOCK_STREAM, 0);
+		Bind(sd, (struct sockaddr *) &sad, sizeof(sad));
+		int *msg = malloc(msgbytes);
+		int *dump = malloc(msgbytes);
 
-	// Connect the socket to the specified server. 
+		printf("PINGPONG: UDP Socket created\n");
+		
+		/*	
 
-	Connect(sd, (struct sockaddr *)(&sad), sizeof(struct sockaddr));
+			printf("PINGPONG: Sending a datagram\n");	
 
-	// Repeatedly read data from socket and write to user's screen. 
+			Sendto(sd, &msgbytes, sizeof(msgbytes), 0,(struct sockaddr *) sad, sizeof(sad));
+			Sendto(sd, msg, sizeof(msg), 0, (struct sockaddr *) &sad, sizeof(sad));
+			
+			printf("PINGPONG: Datagram sent\n");
+			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0, &cad, (socklen_t *) &fsize);
+			Recvfrom(sd, dump, sizeof(dump),0,&cad, (socklen_t *) &fsize);
+			printf("PINGPONG: UDP received a %d size packet\n", bytes_expected);
+		*/	
 
-	strcpy(buf, "here is a message for you");
-	bytes_expected = strlen(buf) + 1;
+	} else if(strncmp(prot,"TCP", 3) == 0) {
 
-	printf("SOURCE: Sending 'here is a message for you' \n");
+		char	buf[msgbytes];	     // buffer for data from the server
+		int i;
+		for(i = 0; i < msgbytes; i++)
+			buf[i] = 'A';
 
-	Writen(sd, &bytes_expected, sizeof(int));
-	Writen(sd, buf, bytes_expected);
+		struct sockaddr_in sad; // structure to hold an IP address	
+		memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
+		sad.sin_family = AF_INET;	      // set family to Internet	
+		bcopy(serverptr->ai_addr, (char *) &sad, serverptr->ai_addrlen);
+		sad.sin_port = htons((u_short)port);
 
-	bytes_expected = strlen(buf2) + 1;
+		printsin(&sad, "PINGPONG", ":");
 
-	printf("SOURCE: Sending %d byte msg\n", bytes_expected);
-	printf("SOURCE: Sending '%s' byte msg\n", buf2);
+		int	sd;		   			
+		sd = Socket(AF_INET, SOCK_STREAM, 0);
 
-	Writen(sd, &bytes_expected, sizeof(int));
-	Writen(sd, buf2, bytes_expected);
+		printf("PINGPONG: Connecting to reflector TCP\n");
 
-	bytes_read = Readn(sd, buf, sizeof(int));
-	printf("SOURCE: Expecting %d bytes from sink\n", bytes_read);
+		Connect(sd, (struct sockaddr *) (&sad), sizeof(struct sockaddr));
 
-	i = Readn(sd,buf,bytes_read);
-	printf("SOURCE: Got %d bytes from sink\n",i);
-	buf[i+1] = 0;
-	printf("SOURCE: Got '%s' from sink\n",buf);
+		printf("PINGPONG: TCP connection established\n");
 
-	// Close the socket. 
-	Close(sd);
+		printf("PINGPONG: Sending a message\n");
+		printf("PINGPONG: Sending a message (%d) '%s'\n", msgbytes, buf);
 
-	// Terminate the client program gracefully. 
-	exit(0);
+		Writen(sd, &msgbytes, sizeof(int));
+		Writen(sd, buf, msgbytes);
+
+		printf("PINGPONG: Awating respone\n");
+
+		Readn(sd, &msgbytes, sizeof(int));
+		Readn(sd, buf, msgbytes);
+	
+		printf("PINGPONG: Recieved message (%d) '%s'\n", msgbytes, buf);
+		printf("PINGPONG: Received response terminated\n");
+		close(sd);		
+
+	} else {
+		printf("Improper protocol %s expecting either 'TCP' or 'UDP'\n", argv[2]);
+	}
+
+	return 1;
 }
