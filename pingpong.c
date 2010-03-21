@@ -25,7 +25,6 @@ int main(int argc, char* argv[]) {
 		exit(-1);
 	}
 
-	int i = 0;
 	int msgbytes = atoi(argv[1]);
 	char *host = argv[2];
 	int port = atoi(argv[3]);		     // protocol port number		
@@ -53,34 +52,40 @@ int main(int argc, char* argv[]) {
 
 	if(strncmp(prot,"UDP", 3) == 0 ) {
 		struct sockaddr_in cad; // structure to hold an IP address	
-		struct sockaddr_in sad; // structure to hold an IP address	
+		
+		struct sockaddr_in sad; // structure to hold an ip address	
 		memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
-		sad.sin_family = AF_INET;	      // set family to Internet	
+		sad.sin_family = AF_INET;	      // set family to internet	
 		bcopy(serverptr->ai_addr, (char *) &sad,  serverptr->ai_addrlen);
 		sad.sin_port = htons((u_short)port);
+
+		struct sockaddr_in sad2; // structure to hold an ip address	
+		memset((char *)&sad2,0,sizeof(sad2)); // clear sockaddr structure	
+		sad2.sin_family = AF_INET;	      // set family to internet	
+		bcopy(serverptr->ai_addr, (char *) &sad2,  serverptr->ai_addrlen);
+		sad2.sin_port = htons((u_short)port+1);
 
 		int fsize = sizeof(struct sockaddr);
 		int bytes_expected, sd;
 		sd = Socket(AF_INET, SOCK_DGRAM, 0);
 
-		Bind(sd, (struct sockaddr *) &sad, sizeof(sad));
+		Bind(sd, (struct sockaddr *) &sad2, sizeof(sad2));
 		int *msg = malloc(msgbytes);
 		int *dump = malloc(msgbytes);
 
 		printf("PINGPONG: UDP Socket created\n");
-		
-		/*	
+		printf("PINGPONG: Sending a (%d) sized datagram\n", msgbytes);	
 
-			printf("PINGPONG: Sending a datagram\n");	
+		Sendto(sd, &msgbytes, sizeof(msgbytes), 0,(struct sockaddr *) &sad, sizeof(sad));
+		Sendto(sd, msg, sizeof(msg), 0, (struct sockaddr *) &sad, sizeof(sad));
 
-			Sendto(sd, &msgbytes, sizeof(msgbytes), 0,(struct sockaddr *) sad, sizeof(sad));
-			Sendto(sd, msg, sizeof(msg), 0, (struct sockaddr *) &sad, sizeof(sad));
-			
-			printf("PINGPONG: Datagram sent\n");
-			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0, &cad, (socklen_t *) &fsize);
-			Recvfrom(sd, dump, sizeof(dump),0,&cad, (socklen_t *) &fsize);
-			printf("PINGPONG: UDP received a %d size packet\n", bytes_expected);
-		*/	
+		printf("PINGPONG: Datagram sent\n");
+		printf("PINGPONG: Awaiting the response\n");
+
+		Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0,(struct sockaddr *)  &cad, (socklen_t *) &fsize);
+		Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *) &cad, (socklen_t *) &fsize);
+
+		printf("PINGPONG: UDP received a %d size packet\n", bytes_expected);
 
 	} else if(strncmp(prot,"TCP", 3) == 0) {
 
@@ -88,6 +93,7 @@ int main(int argc, char* argv[]) {
 		int i;
 		for(i = 0; i < msgbytes; i++)
 			buf[i] = 'A';
+		buf[msgbytes-1] = 0;
 
 		struct sockaddr_in sad; // structure to hold an IP address	
 		memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
