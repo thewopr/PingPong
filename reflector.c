@@ -128,10 +128,9 @@ int main(int argc, char* argv[]) {
 			Writen(sd2, buf, bytes_expected);
 
 			printf("REFLECTOR: Reply message sent\n");
-
+			close(sd2);
 		}
 
-		close(sd2);
 		close(sd);		
 
 	} else {
