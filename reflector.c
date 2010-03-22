@@ -24,7 +24,6 @@ int main(int argc, char* argv[]) {
 		exit(-1);
 	}
 
-	int i = 0;
 	int	port = atoi(argv[1]);		     // protocol port number		
 
 	if (port <= 0) {	
@@ -34,14 +33,21 @@ int main(int argc, char* argv[]) {
 
 	if(strncmp(argv[2],"UDP", 3) == 0 ) {
 		struct sockaddr_in cad; // structure to hold an IP address	
+
 		struct sockaddr_in sad; // structure to hold an IP address	
 		memset((char *)&sad,0,sizeof(sad)); // clear sockaddr structure	
 		sad.sin_family = AF_INET;	      // set family to Internet	
 		sad.sin_addr.s_addr = htonl(INADDR_ANY);
 		sad.sin_port = htons((u_short)port);
 
+		struct sockaddr_in sad2; // structure to hold an IP address	
+		memset((char *)&sad2,0,sizeof(sad2)); // clear sockaddr structure	
+		sad2.sin_family = AF_INET;	      // set family to Internet	
+		sad2.sin_addr.s_addr = htonl(INADDR_ANY);
+		sad2.sin_port = htons((u_short)port+1);
+
+
 		int fsize = sizeof(struct sockaddr);
-		int bytes_expected;
 		int	sd;		     // socket descriptor			
 		sd = Socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -51,23 +57,32 @@ int main(int argc, char* argv[]) {
 		printf("REFLECTOR: UDP Socket created\n");
 		
 		while(1) {
-			printf("Reflector awaiting UDP datagrams\n");	
+	
+			int bytes_expected;
+			printf("REFLECTOR: Awaiting UDP datagrams\n");	
 			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0,(struct sockaddr *)  &cad, (socklen_t *) &fsize);
-			printf("RELFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
+			
+			printf("REFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
+
 			int *dump = malloc(bytes_expected);
 			Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *)&cad, (socklen_t *) &fsize);
+
 			printf("REFLECTOR: UDP received a %d size packet\n", bytes_expected);
+
+			printf("REFLECTOR: Responding with the same datagram\n");
 			
-			printsin(&cad, "REFLECTOR", ": UDP");				
+//			cad.sin_port = htons((u_short)port+1);
+			
+			Sendto(sd, &bytes_expected, sizeof(bytes_expected), 0, (struct sockaddr *) &sad2, sizeof(sad) );
+			Sendto(sd, dump, sizeof(dump), 0, (struct sockaddr *) &sad2, sizeof(sad) );
 
-
-
+			printf("REFLECTOR: Response sent\n");
 
 		}
 
 	} else if(strncmp(argv[2],"TCP", 3) == 0) {
 
-		char	buf[BUFSIZE];	     // buffer for data from the server
+		char	buf[MAXDATAGRAMSIZE];	     // buffer for data from the server
 
 		struct sockaddr_in cad; // structure to hold an IP address	
 		struct sockaddr_in sad; // structure to hold an IP address	

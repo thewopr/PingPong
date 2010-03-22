@@ -4,6 +4,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -14,9 +15,23 @@
 
 extern int errno;
 
-#define BUFSIZE 1000
-#define NUMPACKETS 30
 #define MAXDATAGRAMSIZE 65000
+
+double elapsed(struct timeval end, struct timeval start) {
+
+	double dUsec = end.tv_usec - start.tv_usec;
+	double dsec = 0;
+
+	if(dUsec < 0) {
+		dsec += 1;
+		dUsec += 1000;
+	}
+	dsec += end.tv_sec - start.tv_sec;
+
+	return dsec + (dUsec / 1000000);
+
+}
+
 
 int main(int argc, char* argv[]) {
 
@@ -50,7 +65,13 @@ int main(int argc, char* argv[]) {
 
 	Getaddrinfo(host, NULL, &hint, &serverptr);
 
+	struct timeval start, end;
+	gettimeofday(&start, NULL);
+	
+
 	if(strncmp(prot,"UDP", 3) == 0 ) {
+
+
 		struct sockaddr_in cad; // structure to hold an IP address	
 		
 		struct sockaddr_in sad; // structure to hold an ip address	
@@ -86,6 +107,8 @@ int main(int argc, char* argv[]) {
 		Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *) &cad, (socklen_t *) &fsize);
 
 		printf("PINGPONG: UDP received a %d size packet\n", bytes_expected);
+		close(sd);
+		printf("PINGPONG: Execution done terminating\n");
 
 	} else if(strncmp(prot,"TCP", 3) == 0) {
 
@@ -130,6 +153,10 @@ int main(int argc, char* argv[]) {
 	} else {
 		printf("Improper protocol %s expecting either 'TCP' or 'UDP'\n", argv[2]);
 	}
+
+	gettimeofday(&end, NULL);
+	printf("PINGPONG: Elapsed time %f second\n", elapsed(end, start));
+
 
 	return 1;
 }
