@@ -86,7 +86,7 @@ ssize_t Readn(int fd, void *ptr, size_t nbytes)
 void Writen(int fd, void *ptr, size_t nbytes)
 {
   if (writen(fd, ptr, nbytes) != nbytes) {
-    printf("readn error\n");
+    printf("writen error\n");
     exit(-1);
   }
 }

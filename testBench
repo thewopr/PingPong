@@ -1,9 +1,9 @@
-#./pingpong 1 localhost 9000 TCP ${1} >> TCP_Local
-#./pingpong 16383 localhost 9000 TCP ${1} >> TCP_Local
-#./pingpong 32767 localhost 9000 TCP ${1} >> TCP_Local
-#./pingpong 65000 localhost 9000 TCP ${1} >> TCP_Local
+#./pingpong 1 ${2} 9000 UDP ${1} >> UDP_${3}
+#./pingpong 16383 ${2} 9000 UDP ${1} >> UDP_${3}
+#./pingpong 32767 ${2} 9000 UDP ${1} >> UDP_${3}
+#./pingpong 65000 ${2} 9000 UDP ${1} >> UDP_${3}
 
-./pingpong 1 localhost 9000 UDP ${1} >> UDP_Local
-./pingpong 16383 localhost 9000 UDP ${1} >> UDP_Local
-./pingpong 32767 localhost 9000 UDP ${1} >> UDP_Local
-./pingpong 65000 localhost 9000 UDP ${1} >> UDP_Local
+./pingpong 1 ${2} 9000 TCP ${1} >> TCP_${3}
+./pingpong 16383 ${2} 9000 TCP ${1} >> TCP_${3}
+./pingpong 32767 ${2} 9000 TCP ${1} >> TCP_${3}
+./pingpong 65000 ${2} 9000 TCP ${1} >> TCP_${3}

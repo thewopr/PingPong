@@ -62,8 +62,7 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "PINGPONG: bad numTrials (%d) , 0 < numTrials < 1001\n", numTrials);
 		exit(1);
 	}
-
-
+	
 	struct addrinfo *serverptr;
 	struct addrinfo hint;
 
@@ -73,7 +72,7 @@ int main(int argc, char* argv[]) {
 	hint.ai_family = AF_INET;
 
 	Getaddrinfo(host, NULL, &hint, &serverptr);
-
+	
 	struct timeval start, end;
 
 	double times [numTrials];
@@ -95,9 +94,13 @@ int main(int argc, char* argv[]) {
 			struct sockaddr_in sad2; // structure to hold an ip address	
 			memset((char *)&sad2,0,sizeof(sad2)); // clear sockaddr structure	
 			sad2.sin_family = AF_INET;	      // set family to internet	
-			bcopy(serverptr->ai_addr, (char *) &sad2,  serverptr->ai_addrlen);
+			sad2.sin_addr.s_addr = htonl(INADDR_ANY);
 			sad2.sin_port = htons((u_short)port+1);
 
+//			printsin(&sad, "PRINT"," SIN:");
+			
+			fflush(stdout);
+			
 			int fsize = sizeof(struct sockaddr);
 			int bytes_expected, sd;
 			sd = Socket(AF_INET, SOCK_DGRAM, 0);
@@ -106,14 +109,14 @@ int main(int argc, char* argv[]) {
 			int *msg = malloc(msgbytes);
 			int *dump = malloc(msgbytes);
 
-//			fprintf(stderr,"PINGPONG: UDP Socket created\n");
-//			fprintf(stderr,"PINGPONG: Sending a (%d) sized datagram\n", msgbytes);	
+//	fprintf(stderr,"PINGPONG: UDP Socket created\n");
+//	fprintf(stderr,"PINGPONG: Sending a (%d) sized datagram\n", msgbytes);	
 
 			Sendto(sd, &msgbytes, sizeof(msgbytes), 0,(struct sockaddr *) &sad, sizeof(sad));
 			Sendto(sd, msg, sizeof(msg), 0, (struct sockaddr *) &sad, sizeof(sad));
 
-//			fprintf(stderr,"PINGPONG: Datagram sent\n");
-//			fprintf(stderr,"PINGPONG: Awaiting the response\n");
+//	fprintf(stderr,"PINGPONG: Datagram sent\n");
+//	fprintf(stderr,"PINGPONG: Awaiting the response\n");
 
 			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0,(struct sockaddr *)  &cad, (socklen_t *) &fsize);
 			Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *) &cad, (socklen_t *) &fsize);
@@ -121,7 +124,7 @@ int main(int argc, char* argv[]) {
 			gettimeofday(&end, NULL);			
 			times[i] = elapsed(end,start);
 
-//			fprintf(stderr,"PINGPONG: UDP received a %d size packet\n", bytes_expected);
+//	fprintf(stderr,"PINGPONG: UDP received a %d size packet\n", bytes_expected);
 			close(sd);
 		}
 //		fprintf(stderr,"PINGPONG: Execution done terminating\n");

@@ -54,29 +54,30 @@ int main(int argc, char* argv[]) {
 		Bind(sd, (struct sockaddr *) &sad, sizeof(sad));
 		
 
-//		printf("REFLECTOR: UDP Socket created\n");
+		printf("REFLECTOR: UDP Socket created\n");
 		
 		while(1) {
 	
 			int bytes_expected;
-//			printf("REFLECTOR: Awaiting UDP datagrams\n");	
+			printf("REFLECTOR: Awaiting UDP datagrams\n");	
 			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0,(struct sockaddr *)  &cad, (socklen_t *) &fsize);
-			
-//			printf("REFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
+			printsin(&cad, "REFLECTOR", ": ");
+			printf("REFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
 
 			int *dump = malloc(bytes_expected);
 			Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *)&cad, (socklen_t *) &fsize);
 
-//			printf("REFLECTOR: UDP received a %d size packet\n", bytes_expected);
+			printf("REFLECTOR: UDP received a %d size packet\n", bytes_expected);
 
-//			printf("REFLECTOR: Responding with the same datagram\n");
+			printf("REFLECTOR: Responding with the same datagram\n");
 			
-//			cad.sin_port = htons((u_short)port+1);
+			cad.sin_port = htons((u_short)port+1);
+			printsin(&cad, "REFLECTOR",":");	
 			
-			Sendto(sd, &bytes_expected, sizeof(bytes_expected), 0, (struct sockaddr *) &sad2, sizeof(sad) );
-			Sendto(sd, dump, sizeof(dump), 0, (struct sockaddr *) &sad2, sizeof(sad) );
+			Sendto(sd, &bytes_expected, sizeof(bytes_expected), 0, (struct sockaddr *) &cad, sizeof(cad) );
+			Sendto(sd, dump, sizeof(dump), 0, (struct sockaddr *) &cad, sizeof(cad) );
 
-//			printf("REFLECTOR: Response sent\n");
+			printf("REFLECTOR: Response sent\n");
 
 		}
 
