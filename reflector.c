@@ -54,29 +54,29 @@ int main(int argc, char* argv[]) {
 		Bind(sd, (struct sockaddr *) &sad, sizeof(sad));
 		
 
-		printf("REFLECTOR: UDP Socket created\n");
+//		printf("REFLECTOR: UDP Socket created\n");
 		
 		while(1) {
 	
 			int bytes_expected;
-			printf("REFLECTOR: Awaiting UDP datagrams\n");	
+//			printf("REFLECTOR: Awaiting UDP datagrams\n");	
 			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0,(struct sockaddr *)  &cad, (socklen_t *) &fsize);
 			
-			printf("REFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
+//			printf("REFLECTOR: UDP received a packet, expecting another of %d bytes\n", bytes_expected);
 
 			int *dump = malloc(bytes_expected);
 			Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *)&cad, (socklen_t *) &fsize);
 
-			printf("REFLECTOR: UDP received a %d size packet\n", bytes_expected);
+//			printf("REFLECTOR: UDP received a %d size packet\n", bytes_expected);
 
-			printf("REFLECTOR: Responding with the same datagram\n");
+//			printf("REFLECTOR: Responding with the same datagram\n");
 			
 //			cad.sin_port = htons((u_short)port+1);
 			
 			Sendto(sd, &bytes_expected, sizeof(bytes_expected), 0, (struct sockaddr *) &sad2, sizeof(sad) );
 			Sendto(sd, dump, sizeof(dump), 0, (struct sockaddr *) &sad2, sizeof(sad) );
 
-			printf("REFLECTOR: Response sent\n");
+//			printf("REFLECTOR: Response sent\n");
 
 		}
 
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 
 		Bind(sd, (struct sockaddr *) &sad, sizeof(sad));
 
-		printf("REFLECTOR: TCP Socket created\n");
+//		printf("REFLECTOR: TCP Socket created\n");
 
 		listen(sd, 1);
 		
@@ -106,28 +106,27 @@ int main(int argc, char* argv[]) {
 
 			memset((char *)&cad,0,sizeof(cad)); // clear sockaddr structure	
 
-			printf("REFLECTOR: Listening for a connection\n");
+//			printf("REFLECTOR: Listening for a connection\n");
 			alen = sizeof(cad);
 
 			sd2 = accept(sd, (struct sockaddr *) &cad, &alen);		
 
-			printf("REFLECTOR: Accepted a connection\n");
-			printsin(&cad, "REFLECTOR", ": ");
+//			printf("REFLECTOR: Accepted a connection\n");
 			
-			printf("REFLECTOR: Waiting to receive a message\n");
+//			printf("REFLECTOR: Waiting to receive a message\n");
 
 			Readn(sd2, &bytes_expected, sizeof(int));
 			Readn(sd2, buf, bytes_expected);
 
-			printf("REFLECTOR: Received a message\n");
-			printf("REFLECTOR: (%d) '%s'\n", bytes_expected, buf);
+//			printf("REFLECTOR: Received a message\n");
+//			printf("REFLECTOR: (%d) '%s'\n", bytes_expected, buf);
 
 			printf("REFLECTOR: Replying with the same message\n");
 
 			Writen(sd2, &bytes_expected, sizeof(int));
 			Writen(sd2, buf, bytes_expected);
 
-			printf("REFLECTOR: Reply message sent\n");
+//			printf("REFLECTOR: Reply message sent\n");
 			close(sd2);
 		}
 

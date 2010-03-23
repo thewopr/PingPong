@@ -1,0 +1,9 @@
+#./pingpong 1 localhost 9000 TCP ${1} >> TCP_Local
+#./pingpong 16383 localhost 9000 TCP ${1} >> TCP_Local
+#./pingpong 32767 localhost 9000 TCP ${1} >> TCP_Local
+#./pingpong 65000 localhost 9000 TCP ${1} >> TCP_Local
+
+./pingpong 1 localhost 9000 UDP ${1} >> UDP_Local
+./pingpong 16383 localhost 9000 UDP ${1} >> UDP_Local
+./pingpong 32767 localhost 9000 UDP ${1} >> UDP_Local
+./pingpong 65000 localhost 9000 UDP ${1} >> UDP_Local

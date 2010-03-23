@@ -17,6 +17,7 @@
 extern int errno;
 
 #define MAXDATAGRAMSIZE 65000
+#define NUMTRIALS 100000
 
 double elapsed(struct timeval end, struct timeval start) {
 
@@ -29,15 +30,15 @@ double elapsed(struct timeval end, struct timeval start) {
 	}
 	dsec += end.tv_sec - start.tv_sec;
 
-	return dsec + (dUsec / 1000000);
+	return dsec*1000000 + dUsec;
 
 }
 
 
 int main(int argc, char* argv[]) {
 
-	if (argc < 5) {
-		fprintf(stderr, "usage: %s [ msgbytes ] [ host ] [ port ] [ protocol ]\n",argv[0]);
+	if (argc < 6) {
+		fprintf(stderr, "usage: %s [ msgbytes ] [ host ] [ port ] [ protocol ] [ numTrials ]\n",argv[0]);
 		exit(-1);
 	}
 
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]) {
 	char *host = argv[2];
 	int port = atoi(argv[3]);		     // protocol port number		
 	char *prot = argv[4];
-	int numTrials = 10;
+	int numTrials = atoi(argv[5]);
 
 	if (port <= 0) {	
 		fprintf(stderr,"PINGPONG: bad port number %s\n",argv[3]);
@@ -57,7 +58,7 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 
-	if(numTrials < 0 || numTrials > 1000) {
+	if(numTrials < 0 || numTrials > 1000000) {
 		fprintf(stderr, "PINGPONG: bad numTrials (%d) , 0 < numTrials < 1001\n", numTrials);
 		exit(1);
 	}
@@ -105,14 +106,14 @@ int main(int argc, char* argv[]) {
 			int *msg = malloc(msgbytes);
 			int *dump = malloc(msgbytes);
 
-			fprintf(stderr,"PINGPONG: UDP Socket created\n");
-			fprintf(stderr,"PINGPONG: Sending a (%d) sized datagram\n", msgbytes);	
+//			fprintf(stderr,"PINGPONG: UDP Socket created\n");
+//			fprintf(stderr,"PINGPONG: Sending a (%d) sized datagram\n", msgbytes);	
 
 			Sendto(sd, &msgbytes, sizeof(msgbytes), 0,(struct sockaddr *) &sad, sizeof(sad));
 			Sendto(sd, msg, sizeof(msg), 0, (struct sockaddr *) &sad, sizeof(sad));
 
-			fprintf(stderr,"PINGPONG: Datagram sent\n");
-			fprintf(stderr,"PINGPONG: Awaiting the response\n");
+//			fprintf(stderr,"PINGPONG: Datagram sent\n");
+//			fprintf(stderr,"PINGPONG: Awaiting the response\n");
 
 			Recvfrom(sd, &bytes_expected, sizeof(bytes_expected),0,(struct sockaddr *)  &cad, (socklen_t *) &fsize);
 			Recvfrom(sd, dump, sizeof(dump),0,(struct sockaddr *) &cad, (socklen_t *) &fsize);
@@ -120,10 +121,10 @@ int main(int argc, char* argv[]) {
 			gettimeofday(&end, NULL);			
 			times[i] = elapsed(end,start);
 
-			fprintf(stderr,"PINGPONG: UDP received a %d size packet\n", bytes_expected);
+//			fprintf(stderr,"PINGPONG: UDP received a %d size packet\n", bytes_expected);
 			close(sd);
 		}
-		fprintf(stderr,"PINGPONG: Execution done terminating\n");
+//		fprintf(stderr,"PINGPONG: Execution done terminating\n");
 
 	} else if(strncmp(prot,"TCP", 3) == 0) {
 		char	buf[msgbytes];	     // buffer for data from the server
@@ -140,30 +141,28 @@ int main(int argc, char* argv[]) {
 			bcopy(serverptr->ai_addr, (char *) &sad, serverptr->ai_addrlen);
 			sad.sin_port = htons((u_short)port);
 
-			printsin(&sad, "PINGPONG", ":");
-
 			int	sd;		   			
 			sd = Socket(AF_INET, SOCK_STREAM, 0);
 
-			fprintf(stderr,"PINGPONG: Connecting to reflector TCP\n");
+//			fprintf(stderr,"PINGPONG: Connecting to reflector TCP\n");
 
 			Connect(sd, (struct sockaddr *) (&sad), sizeof(struct sockaddr));
 
-			fprintf(stderr,"PINGPONG: TCP connection established\n");
+//			fprintf(stderr,"PINGPONG: TCP connection established\n");
 
-			fprintf(stderr,"PINGPONG: Sending a message\n");
-			fprintf(stderr,"PINGPONG: Sending a message (%d) '%s'\n", msgbytes, buf);
+//			fprintf(stderr,"PINGPONG: Sending a message\n");
+//			fprintf(stderr,"PINGPONG: Sending a message (%d) '%s'\n", msgbytes, buf);
 
 			Writen(sd, &msgbytes, sizeof(int));
 			Writen(sd, buf, msgbytes);
 
-			fprintf(stderr,"PINGPONG: Awating respone\n");
+//			fprintf(stderr,"PINGPONG: Awating respone\n");
 
 			Readn(sd, &msgbytes, sizeof(int));
 			Readn(sd, buf, msgbytes);
 
-			fprintf(stderr,"PINGPONG: Recieved message (%d) '%s'\n", msgbytes, buf);
-			fprintf(stderr,"PINGPONG: Received response terminated\n");
+//			fprintf(stderr,"PINGPONG: Recieved message (%d) '%s'\n", msgbytes, buf);
+//			fprintf(stderr,"PINGPONG: Received response terminated\n");
 
 			gettimeofday(&end, NULL);			
 			times[i] = elapsed(end,start);
@@ -172,7 +171,7 @@ int main(int argc, char* argv[]) {
 			close(sd);		
 		}
 	} else {
-		fprintf(stderr,"Improper protocol %s expecting either 'TCP' or 'UDP'\n", argv[2]);
+//		fprintf(stderr,"Improper protocol %s expecting either 'TCP' or 'UDP'\n", argv[2]);
 	}
 
 
@@ -190,11 +189,11 @@ int main(int argc, char* argv[]) {
 	stdDev /= numTrials;
 	stdDev = sqrt(stdDev);
 
-	double error = 2.262 * (stdDev / sqrt(9.0));
+	double error = 1.96 * (stdDev / sqrt(numTrials-1));
 
-	fprintf(stderr,"PINGPONG: Average of %d trials is %f\n", numTrials, average);
-	fprintf(stderr,"PINGPONG: Standard Deviation is %f\n", stdDev);
-	fprintf(stderr,"PINGPONG: Error is %f\n", error);
+//	fprintf(stderr,"PINGPONG: Average of %d trials is %f\n", numTrials, average);
+//	fprintf(stderr,"PINGPONG: Standard Deviation is %f\n", stdDev);
+//	fprintf(stderr,"PINGPONG: Error is %f\n", error);
 
 	printf("%d %f %f\n", msgbytes, average, error);
 
